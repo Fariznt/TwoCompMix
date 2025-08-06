@@ -21,4 +21,4 @@ license-files = ["LICENSE"]
 [project.urls]
 "Homepage" = "https://github.com/Fariznt/TwoCompMix"
 "Issues" = "https://github.com/Fariznt/TwoCompMix/issues"
-"Upstream Repository" = "https://github.com/Fariznt/Links-Mixture-Modeling"
+"Wrapped Package Homepage" = "https://github.com/Fariznt/Links-Mixture-Modeling"

@@ -1,5 +1,5 @@
 import pandas as pd
-from rpy2.robjects import pandas2ri, r, Formula, default_converter
+from rpy2.robjects import pandas2ri, numpy2ri, r, default_converter, Formula, NULL
 from rpy2.robjects.vectors import StrVector, ListVector, IntVector, BoolVector, FloatVector, DataFrame
 from rpy2.robjects.packages import importr
 from collections.abc import Sequence
@@ -10,12 +10,14 @@ _cv = default_converter + pandas2ri.converter # local converter
 # load R package
 r('if (!requireNamespace("devtools", quietly=TRUE)) install.packages("devtools")')
 r('library(devtools)')
-r('if (!requireNamespace("LinksMixtureModeling", quietly=TRUE)) '
-     'devtools::install_github("fariznt/Links-Mixture-Modeling")')
+# r('if (!requireNamespace("LinksMixtureModeling", quietly=TRUE)) '
+#      'devtools::install_github("fariznt/Links-Mixture-Modeling")') 
+r('devtools::install_github("fariznt/Links-Mixture-Modeling")')
 r('library(LinksMixtureModeling)')
 # Dev note: When/if this wrapper is ready for distribution, instead of loading from github, 
 # consider storing the final R package as package data within this Python package, 
-# or loading directly from CRAN with importr()
+# or loading directly from CRAN with importr(). Wrap in if (!requireNamespace("LinksMixtureModeling", quietly=TRUE)) 
+# to prevent reloading.
 
 core = importr("LinksMixtureModeling")
 
@@ -27,7 +29,7 @@ def fit_glm(formulas,
             warmup_iterations: int = 1000,
             chains: int = 2,
             seed: int = 123,
-            diagnostics = False):
+            diagnostics: bool = False):
     """
     TODO
     """
@@ -56,7 +58,7 @@ def fit_glm(formulas,
         seed = r_seed,
         diagnostics = r_diagnostics
     )
-
+    print(output)
     return pythonify(output) # convert output to python types and return
 
 
@@ -91,34 +93,31 @@ def _convert_priors(priors):
     """
     TODO
     """
-    r_priors_dict = dict()
+    if priors == None: 
+        return NULL 
+    else:
+        r_priors_dict = dict()
+        with localconverter(_cv):
+            for k, v in priors.items():
+                if isinstance(v, str):
+                    r_priors_dict[k] = StrVector([v])
+                elif isinstance(v, int):
+                    r_priors_dict[k] = FloatVector([v])
+                elif isinstance(v, Sequence): # vector passed as python sequence (tuple, list, etc.)
+                    r_priors_dict[k] = FloatVector(tuple(v))
+                elif isinstance(v, pd.Series): # vector passed as pandas series
+                    r_priors_dict[k] = FloatVector(v.astype(float).tolist())
+                elif isinstance(v, pd.DataFrame): # matrix passed as pandas dataframe
+                    r_priors_dict[k] = r['as.matrix'](pandas2ri.py2rpy(v))
+                else: # could add more type friendliness here
+                    raise TypeError(f'Invalid value for element of list "priors".\nKey of invalid value: {str(k)}\nValue: {str(v)}')
 
-    with localconverter(_cv):
-        for k, v in priors.items():
-            if isinstance(v, str):
-                r_priors_dict[k] = StrVector([v])
-            elif isinstance(v, int):
-                r_priors_dict[k] = FloatVector([v])
-            elif isinstance(v, Sequence): # vector passed as python sequence (tuple, list, etc.)
-                r_priors_dict[k] = FloatVector(tuple(v))
-            elif isinstance(v, pd.Series): # vector passed as pandas series
-                r_priors_dict[k] = FloatVector(v.astype(float).tolist())
-            elif isinstance(v, pd.DataFrame): # matrix passed as pandas dataframe
-                r_priors_dict[k] = r['as.matrix'](pandas2ri.py2rpy(v))
-            else: # could add more type friendliness here
-                raise TypeError(f'Invalid value for element of list "priors".\nKey of invalid value: {str(k)}\nValue: {str(v)}')
-
-    return ListVector(r_priors_dict)
+        return ListVector(r_priors_dict)
     
 def pythonify(obj):
     """
     If given an R dataframe, returns pandas dataframe. If given a nested R list of R lists and dataframes, recursively traverses 
     the object structure to generate and return a nested python list of lists and Pandas dataframes.
     """
-    with localconverter(_cv):
-        if isinstance(obj, DataFrame):
-            return pandas2ri.rpy2py(obj)
-        elif isinstance(obj, ListVector):
-            return {key: pythonify(value) for key, value in obj.items()}
-        else:
-            raise TypeError(f'Invalid type returned from core LinksMixtureModeling package.')
+    # TODO: IMPLEMENT. CURRENTLY RETURNING UNPROCESSED R RESULTS
+    return obj
