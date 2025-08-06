@@ -1,0 +1,6 @@
+# package
+rpy2 >= 3.6.2
+pandas >= 2.3.1
+
+# development, building package
+setuptools >= 65.5.0

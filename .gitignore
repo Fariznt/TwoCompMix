@@ -1,2 +1,4 @@
 testing/
 tests/
+*.egg-info/
+.pytest_cache/

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools >= 80.9.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "TwoCompMix"
+version = "0.0.1"
+authors = [
+    { name="Muhammad Fariz Imran", email="fariz@brown.edu" },
+]
+description = "Lightweight Python wrapper for an R/Stan package that implements two-component Bayesian mixture models for linear, logistic, poisson, and gamma regression for single and joint responses, as well as survival analysis for single responses."
+readme = "README.md"
+requires-python = ">=3.10.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICENSE"]
+
+[project.urls]
+"Homepage" = "https://github.com/Fariznt/TwoCompMix"
+"Issues" = "https://github.com/Fariznt/TwoCompMix/issues"
+"Upstream Repository" = "https://github.com/Fariznt/Links-Mixture-Modeling"

@@ -5,7 +5,7 @@ from rpy2.robjects.packages import importr
 from collections.abc import Sequence
 from rpy2.robjects.conversion import localconverter
 
-pandas2ri.activate() # active R-pandas conversions
+_cv = default_converter + pandas2ri.converter # local converter
 
 # load R package
 r('if (!requireNamespace("devtools", quietly=TRUE)) install.packages("devtools")')
@@ -31,16 +31,20 @@ def fit_glm(formulas,
     """
     TODO
     """
-    r_p_family = StrVector([p_family]) # string to string converstion is automatic
+
+    # Convert from python types to R
     r_formulas = _convert_formulas(formulas)
     r_data = _convert_data(data)
     r_priors = _convert_priors(priors)
-    r_iterations = IntVector([iterations])
-    r_warmup_iterations = IntVector([warmup_iterations])
-    r_chains = IntVector([chains])
-    r_seed = IntVector([seed])
-    r_diagnostics = BoolVector([diagnostics])
+    with localconverter(_cv):
+        r_p_family = StrVector([p_family]) # string to string converstion is automatic
+        r_iterations = IntVector([iterations])
+        r_warmup_iterations = IntVector([warmup_iterations])
+        r_chains = IntVector([chains])
+        r_seed = IntVector([seed])
+        r_diagnostics = BoolVector([diagnostics])
 
+    # call core R package
     output = core.fit_glm(
         formulas = r_formulas,
         p_family = r_p_family,
@@ -53,7 +57,7 @@ def fit_glm(formulas,
         diagnostics = r_diagnostics
     )
 
-    return pythonify(output)
+    return pythonify(output) # convert output to python types and return
 
 
 def fit_survival_model():
@@ -64,41 +68,45 @@ def _convert_formulas(formulas):
     """
     Takes Python input and converts to R list of formulas
     """
-    if isinstance(formulas, (list, tuple)):
-        return [Formula(f) for f in formulas]
-    elif isinstance(formulas, str):
-        return Formula(formulas)
+    with localconverter(_cv):
+        if isinstance(formulas, (list, tuple)):
+            return [Formula(f) for f in formulas]
+        elif isinstance(formulas, str):
+            return Formula(formulas)
 
 
 def _convert_data(data):
     """
     Takes Python input (String or Pandas dataframe) and converts to R dataframe
     """
-    if isinstance(data, pd.DataFrame): 
-        return pandas2ri.py2rpy(data)
-    elif isinstance(data, str) and data == "random":
-        return StrVector([data])
-    else:
-        raise TypeError("Invalid argument for 'data': Pass Pandas dataframe or string 'random'")
+    with localconverter(_cv):
+        if isinstance(data, pd.DataFrame): 
+            return pandas2ri.py2rpy(data)
+        elif isinstance(data, str) and data == "random":
+            return StrVector([data])
+        else:
+            raise TypeError("Invalid argument for 'data': Pass Pandas dataframe or string 'random'")
     
 def _convert_priors(priors):
     """
     TODO
     """
     r_priors_dict = dict()
-    for k, v in priors.items():
-        if isinstance(v, str):
-            r_priors_dict[k] = StrVector([v])
-        elif isinstance(v, int):
-            r_priors_dict[k] = FloatVector([v])
-        elif isinstance(v, Sequence): # vector passed as python sequence (tuple, list, etc.)
-            r_priors_dict[k] = FloatVector(tuple(v))
-        elif isinstance(v, pd.Series): # vector passed as pandas series
-            r_priors_dict[k] = FloatVector(v.astype(float).tolist())
-        elif isinstance(v, pd.DataFrame): # matrix passed as pandas dataframe
-            r_priors_dict[k] = r['as.matrix'](pandas2ri.py2rpy(v))
-        else: # could add more type friendliness here
-            raise TypeError(f'Invalid value for element of list "priors".\nKey of invalid value: {str(k)}\nValue: {str(v)}')
+
+    with localconverter(_cv):
+        for k, v in priors.items():
+            if isinstance(v, str):
+                r_priors_dict[k] = StrVector([v])
+            elif isinstance(v, int):
+                r_priors_dict[k] = FloatVector([v])
+            elif isinstance(v, Sequence): # vector passed as python sequence (tuple, list, etc.)
+                r_priors_dict[k] = FloatVector(tuple(v))
+            elif isinstance(v, pd.Series): # vector passed as pandas series
+                r_priors_dict[k] = FloatVector(v.astype(float).tolist())
+            elif isinstance(v, pd.DataFrame): # matrix passed as pandas dataframe
+                r_priors_dict[k] = r['as.matrix'](pandas2ri.py2rpy(v))
+            else: # could add more type friendliness here
+                raise TypeError(f'Invalid value for element of list "priors".\nKey of invalid value: {str(k)}\nValue: {str(v)}')
 
     return ListVector(r_priors_dict)
     
@@ -107,9 +115,10 @@ def pythonify(obj):
     If given an R dataframe, returns pandas dataframe. If given a nested R list of R lists and dataframes, recursively traverses 
     the object structure to generate and return a nested python list of lists and Pandas dataframes.
     """
-    if isinstance(obj, DataFrame):
-        return pandas2ri.rpy2py(obj)
-    elif isinstance(obj, ListVector):
-        return {key: pythonify(value) for key, value in obj.items()}
-    else:
-        raise TypeError(f'Invalid type returned from core LinksMixtureModeling package.')
+    with localconverter(_cv):
+        if isinstance(obj, DataFrame):
+            return pandas2ri.rpy2py(obj)
+        elif isinstance(obj, ListVector):
+            return {key: pythonify(value) for key, value in obj.items()}
+        else:
+            raise TypeError(f'Invalid type returned from core LinksMixtureModeling package.')
