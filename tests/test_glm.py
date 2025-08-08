@@ -16,6 +16,7 @@ def test_fit_glm():
         warmup_iterations = 5,
         chains = 1, 
         seed = 123,
+        diagnostics = True
     )
     print(results)
 

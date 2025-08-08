@@ -1,11 +1,12 @@
 import pandas as pd
-from rpy2.robjects import pandas2ri, numpy2ri, r, default_converter, Formula, NULL
+from rpy2.robjects import pandas2ri, r, default_converter, Formula, NULL
 from rpy2.robjects.vectors import StrVector, ListVector, IntVector, BoolVector, FloatVector, DataFrame
 from rpy2.robjects.packages import importr
 from collections.abc import Sequence
 from rpy2.robjects.conversion import localconverter
+from rpy2.rlike.container import NamedList
 
-_cv = default_converter + pandas2ri.converter # local converter
+_cv = default_converter + pandas2ri.converter
 
 # load R package
 r('if (!requireNamespace("devtools", quietly=TRUE)) install.packages("devtools")')
@@ -31,7 +32,7 @@ def fit_glm(formulas,
             seed: int = 123,
             diagnostics: bool = False):
     """
-    TODO
+    TODO after functionality -- mostly same as R but more specific about types
     """
 
     # Convert from python types to R
@@ -63,9 +64,10 @@ def fit_glm(formulas,
 
 
 def fit_survival_model():
-    # dont forget to check a list is not being passed to survival_model rn
-    pass
-
+    """
+    TODO
+    """
+    
 def _convert_formulas(formulas):
     """
     Takes Python input and converts to R list of formulas
@@ -119,5 +121,12 @@ def pythonify(obj):
     If given an R dataframe, returns pandas dataframe. If given a nested R list of R lists and dataframes, recursively traverses 
     the object structure to generate and return a nested python list of lists and Pandas dataframes.
     """
-    # TODO: IMPLEMENT. CURRENTLY RETURNING UNPROCESSED R RESULTS
-    return obj
+    with localconverter(_cv):
+        if isinstance(obj, ListVector):
+            return {var_name: pythonify(var) for var_name, var in obj.items()}
+        elif isinstance(obj, NamedList):
+            list_keys = [_cv.rpy2py(name) for name in obj.names()]
+            list_values = [pythonify(value) for value in obj]
+            return dict(zip(list_keys, list_values))
+        else:
+            return _cv.rpy2py(obj)
