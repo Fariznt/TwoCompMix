@@ -77,33 +77,44 @@ fit = fit_glm(
     p_family = "linear",
     data = my_pandas_dataframe,
     priors = {
-        'beta1_sigma': pd.DataFrame([[2, 1], [1, 2]]), # Square, symmetric matrix
-        'beta1_loc': (7, 8),
-        'beta1': 'multi_normal(beta1_loc, beta1_sigma)',
-        'mu1': 'normal(0,5)',
-        'mu2_loc': 0,
+        'mu1': 'normal(0,5)', # we can directly define the prior like this
+        'mu2_loc': 0, # ...or define hyperparameters first
         'mu2_scale': 6,
-        'mu2': 'normal(mu2_loc, mu2_scale)'
+        'mu2': 'normal(mu2_loc, mu2_scale)' # ...and use them like this
+        'beta1_sigma': pd.DataFrame([[2, 1], [1, 2]]), # Square, symmetric matrix represented as dataframe
+        'beta1_loc': (7, 8), # tuple to represent vector
+        'beta1': 'multi_normal(beta1_loc, beta1_sigma)',
     },
-    iterations = 10,
-    warmup_iterations = 5,
-    chains = 1, 
-    # diagnostics takes on default value, False
+    iterations = 5000,
+    warmup_iterations = 1000,
+    chains = 2, 
+    # diagnostics takes on default value, False, and seed is random
 )
+print(fit) # contains nested dictionaries of information, including parameter summaries and mixture component membership probabilities.
+print(fit['component_membership_probabilities'])
+print(fit['param_stats'])
+print(fit['param_stats']['y']['component1_beta_summary']) # Get a specific dataframe for a specific parameter
+```
 
+```python
 joint_fit = fit_glm(
     formulas = list("y1 ~ X1 + X2", "y2 ~ X1 + X2 + X3"), # notice multiple formulas for jointly modeling responses
     p_family = "poisson",
     data = "random", # "random" triggered synthetic data generation
     # priors, iterations, warmup_iterations, and chains are taking on default values here
+    seed = 123
     diagnostics = True # Triggers returning of sampling time, compile time, and latent values form which synthetic data was generated
 )
+print(joint_fit['results']) # because joint_fit had diagnostics = True, we must index into results for usual information
+# ...and diagnostics = True also lets us get other values
+print(joint_fit['compile_time'])
+print(joint_fit['sampling_time'])
+# ..including latent values used to synthetically generate the random data
+print(joint_fit['latent_values'])
 
-# These objects contain nested dictionaries of information, including parameter summaries and mixture component membership probabilities.
-print(fit) # prints everything
-print(joint_fit['results']) # because joint_fit had diagnostics = True, we must index into results
 ```
-[To be written --- will mostly copy paste docs from both functions. Main point of this section is to make types clear.]
+
+Survival model documentation to be implemented and added later.
 
 ## Development/Contributing
 
