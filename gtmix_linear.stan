@@ -11,7 +11,7 @@ data {
 }
 
 transformed data {
-cov_matrix[2] beta1_sigma;beta1_sigma[1, 1] = 1;beta1_sigma[1, 2] = 2;beta1_sigma[2, 1] = 2;beta1_sigma[2, 2] = 1;vector[2] beta1_loc = [7, 8]';real mu2_loc = 0;real mu2_scale = 6;
+cov_matrix[2] beta1_sigma;beta1_sigma[1, 1] = 2;beta1_sigma[1, 2] = 1;beta1_sigma[2, 1] = 1;beta1_sigma[2, 2] = 2;vector[2] beta1_loc = [7, 8]';real mu2_loc = 0;real mu2_scale = 6;
 }
 
 parameters {

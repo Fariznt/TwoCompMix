@@ -1,7 +1,7 @@
 from TwoCompMix.api import core, fit_glm
 import pandas as pd
 
-# Basic smoke tests to check types being converted correctly for wrapper
+# Basic smoke tests to check types being converted correctly for wrapper---more extensive testing done for underlying R package
 
 def test_fit_glm():
     results = fit_glm(
@@ -15,7 +15,7 @@ def test_fit_glm():
         diagnostics = True
     )
 
-def test_fit_glm_basic_prior():
+def test_fit_glm_priors():
     results = fit_glm(
         formulas = "y ~ X1 + X2",
         p_family = "linear",
@@ -32,10 +32,19 @@ def test_fit_glm_basic_prior():
         iterations = 10,
         warmup_iterations = 5,
         chains = 1, 
-        seed = 123,
         diagnostics = True
     )
 
+def test_fit_glm_multi():
+    results = fit_glm(
+        formulas = list("y1 ~ X1 + X2", "y2 ~ X1 + X2 + X3"),
+        p_family = "linear",
+        data = "random",
+        iterations = 10,
+        warmup_iterations = 5,
+        chains = 1, 
+        diagnostics = True
+    )
 
 
 

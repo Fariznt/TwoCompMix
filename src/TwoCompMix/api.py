@@ -29,22 +29,53 @@ def fit_glm(formulas,
             iterations: int = 10000, 
             warmup_iterations: int = 1000,
             chains: int = 2,
-            seed: int = 123,
+            seed: int = None,
             diagnostics: bool = False):
     """
-    TODO after functionality -- mostly same as R but more specific about types
+    Fits a two-component Bayesian mixture model and returns processed results.
+
+    Parameters
+    ----------
+    formula: str or list
+        Either a model formula in format 'response ~ predictor_1 + predictor_2' or list of such formula strings for jointly modeling responses.
+    p_family: str
+        Distribution family ("linear", "logistic", "poisson", or "gamma")
+    data: pandas.Dataframe or str
+        A Pandas dataframe where each column name represents a response or predictor, and each row is an observation. 
+        Alternatively, input the str "random" if you want synthetic data generated for you (used for testing).
+    priors: dict or None
+        A dictionary, where keys are hyperparameter names or prior parameter names (str), and values define the corresponding values. Values can be 
+        ints, Pandas dataframes, tuples, or other python sequences for hyperparameter values, and strings for prior definition (eg. 'normal(0,5)' 
+        or multi_normal(beta1_loc, beta1_sigma) where hyperparameters beta1_loc and beta1_sigma are defined in the dictionary).
+        If None, weakly-informative defaults are triggered. Undefined prior parameter names in the dictionary also take on default values.
+        See documentation for example(s).
+    iterations: int 
+        Total number of MCMC iterations
+    warmup_iterations: int 
+        Number of burn-in iterations
+    chains: int 
+        Number of MCMC chains
+    seed: int or None 
+        Seed integer, or None for randomly generated seed
+    diagnostics: bool
+        If True, returns original results in a list that also contains compile/sampling times as well as latent values from 
+        which synthetic data was generated, if applicable.
+
+    Returns
+    -------
+    An organized nested dictionary of processed results and summaries.~
     """
 
     # Convert from python types to R
     r_formulas = _convert_formulas(formulas)
     r_data = _convert_data(data)
     r_priors = _convert_priors(priors)
+    r_seed = _convert_seed(seed)
     with localconverter(_cv):
         r_p_family = StrVector([p_family]) # string to string converstion is automatic
         r_iterations = IntVector([iterations])
         r_warmup_iterations = IntVector([warmup_iterations])
         r_chains = IntVector([chains])
-        r_seed = IntVector([seed])
         r_diagnostics = BoolVector([diagnostics])
 
     # call core R package
@@ -93,7 +124,7 @@ def _convert_data(data):
     
 def _convert_priors(priors):
     """
-    TODO
+    Iterates over a list of prior definitions in python types and converts to R types to call fit functions
     """
     if priors == None: 
         return NULL 
@@ -118,10 +149,15 @@ def _convert_priors(priors):
 
         return ListVector(r_priors_dict)
     
+def _convert_seed(seed):
+    if seed == None:
+        return StrVector(["random"])
+    else:
+        return IntVector([seed])
+
 def pythonify(obj):
     """
-    If given an R dataframe, returns pandas dataframe. If given a nested R list of R lists and dataframes, recursively traverses 
-    the object structure to generate and return a nested python list of lists and Pandas dataframes.
+    Recursively traverses list of named or unnamed lists and R objects and converts them into native python types.
     """
     with localconverter(_cv):
         if isinstance(obj, ListVector):
