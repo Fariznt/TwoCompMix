@@ -99,20 +99,22 @@ def _convert_priors(priors):
         return NULL 
     else:
         r_priors_dict = dict()
-        with localconverter(_cv):
-            for k, v in priors.items():
-                if isinstance(v, str):
-                    r_priors_dict[k] = StrVector([v])
-                elif isinstance(v, int):
-                    r_priors_dict[k] = FloatVector([v])
-                elif isinstance(v, Sequence): # vector passed as python sequence (tuple, list, etc.)
-                    r_priors_dict[k] = FloatVector(tuple(v))
-                elif isinstance(v, pd.Series): # vector passed as pandas series
-                    r_priors_dict[k] = FloatVector(v.astype(float).tolist())
-                elif isinstance(v, pd.DataFrame): # matrix passed as pandas dataframe
-                    r_priors_dict[k] = r['as.matrix'](pandas2ri.py2rpy(v))
-                else: # could add more type friendliness here
-                    raise TypeError(f'Invalid value for element of list "priors".\nKey of invalid value: {str(k)}\nValue: {str(v)}')
+        
+        for k, v in priors.items():
+            if isinstance(v, str): # prior passed as python string
+                r_priors_dict[k] = StrVector([v])
+            elif isinstance(v, int): # scalar passed as python int
+                r_priors_dict[k] = FloatVector([v])
+            elif isinstance(v, Sequence): # vector passed as python sequence (tuple, list, etc.)
+                r_priors_dict[k] = FloatVector(tuple(v))
+            elif isinstance(v, pd.Series): # vector passed as pandas series
+                r_priors_dict[k] = FloatVector(v.astype(float).tolist())
+            elif isinstance(v, pd.DataFrame): # matrix passed as pandas dataframe
+                with localconverter(_cv):
+                    R_v = _cv.py2rpy(v)
+                r_priors_dict[k] = r['as.matrix'](R_v)
+            else: # could add more type friendliness here
+                raise TypeError(f'Invalid value for element of list "priors".\nKey of invalid value: {str(k)}\nValue: {str(v)}')
 
         return ListVector(r_priors_dict)
     
