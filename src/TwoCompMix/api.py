@@ -96,8 +96,17 @@ def fit_glm(formulas,
 
 def fit_survival_model():
     """
-    TODO
+    TODO: implement this function, following the pattern established by the function above. Implementation currently postposted as survival model's
+    synthetic data generation and results processing does not match with fit_glm (it eventually should). Once it has been adapted, we will
+    be able to share more of the functionality between models (ex. using pythonify in this python wrapper, but also R function sharing). If I
+    implement this now, it will have to be adapted anyways.
     """
+
+    # 1. Convert from python types to R
+    # 2. call core R package
+    # output = core.fit_survival_model(...)
+    # print(output)
+    # return pythonify(output)
     
 def _convert_formulas(formulas):
     """
