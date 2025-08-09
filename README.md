@@ -24,7 +24,7 @@ This package is currently under development and not available on PyPI. To use, s
 This package exposes fit_glm() and fit_survival_glm() of the original package. The functionality is equivalent, but adapted for python types.
 Named lists are now dictionaries, vectors are python sequences (ex. tuples), and matrices and R dataframes are Pandas dataframes.
 
-GENERALIZED LINEAR MODELS:
+**GENERALIZED LINEAR MODELS:**
 
 ```python
 def fit_glm(formulas, 
@@ -77,7 +77,7 @@ def fit_glm(formulas,
     """
 ```
 
-Examples:
+**Examples:**
 ```python
 fit = fit_glm(
     formulas = "y ~ X1 + X2",
@@ -128,7 +128,7 @@ print(joint_fit['latent_values'])
 
 ```
 
-SURVIVAL MODELS:
+**SURVIVAL MODELS:**
 
 Survival model is not yet implemented. Underlying R package needs to have its survival model code 
 updated to fit the conventions established by the generalized linear models, first.
